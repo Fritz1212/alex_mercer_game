@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alex Mercer Prototype</title>
+    <style>
+        #gameArea {
+            width: 100vw;
+            height: 100vh;
+            border: 2px solid black;
+            position: absolute;
+            overflow: hidden;
+        }
+        
+        #alex {
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            background-image: url("alexMercerModel.svg");
+            background-size: contain;
+        }
+        
+        .tank {
+            width: 90px;
+            height: 90px;
+            position: absolute;
+            background-image: url("tank.png");
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #scoreBoard {
+            display: flex;
+            width: 8%;
+            color: black;
+            font-size: 35px;
+            padding: 10px 30px;
+            border: 5px solid black;
+            border-color : red;
+        }
+
+        #shopBox {
+            display : none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            background-color: aqua;
+        }
+
+        #shopBoxPositioning {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .shopButton {
+            width: 100px;
+            height: 50px;
+            margin: 10px;
+            background-color: red;
+            color: white;
+            font-size: 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #explosion {
+            position: absolute;
+            width: 300px;  /* Explosion size */
+            height: 300px;
+            background-color: rgba(255, 0, 0, 0.5); /* Red transparent circle */
+            border-radius: 50%;
+            display: none; /* Hidden initially */
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .mainShopButton {
+            position: flex;
+            border-radius: 10px;
+            width: 100px;
+            height: 50px;
+            font-size: 25px;
+        }
+
+        .x-shape {
+    position: relative;
+    width: 50px;
+    height: 50px;
+}
+
+    .x-shape::before,
+    .x-shape::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 10px; /* Thickness of the X */
+        background-color: red;
+        top: 50%;
+        left: 0;
+        transform-origin: center;
+    }
+
+    .x-shape::before {
+        transform: rotate(45deg);
+    }
+
+    .x-shape::after {
+        transform: rotate(-45deg);
+    }
+
+    .miring {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 20px;
+    }
+
+    </style>
+</head>
+<body>
+    <div id="gameArea">
+        <div id="score">
+            <h1 id="scoreBoard">Score: <span id="scoreValue">0</span></h1>
+        </div>
+        <div>
+            <button class="mainShopButton" id="mainShopButton">Shop</button>
+        </div>
+        <div id="shopBoxPositioning">
+            <div id="shopBox">
+                <div class="miring">
+                    <h1>Shop</h1>
+                    <div class="x-shape" id="x-shape"></div>
+                </div>
+                <button class="shopButton" id="shopButtonPower">Buy Power</button>
+                <button class="shopButton" id="shopButtonSpeed">Buy Speed</button>
+            </div>
+        </div>
+        <div id="explosion"></div>
+        <div id="alex"></div>
+        <div>
+            <h2>Developed By Yoga, Deepseek, and ChatGPT</h2>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const alex = document.getElementById('alex');
+        const tanks = [];
+        const keys = {};
+        let speed = 0.2;
+        let lastUpdate = Date.now();
+        let score = 0;
+
+        document.getElementById('mainShopButton').addEventListener('click', () => {
+            document.getElementById('shopBox').style.display = 'flex';
+        });
+
+        document.getElementById('x-shape').addEventListener('click', () => {
+            document.getElementById('shopBox').style.display = 'none';
+        });
+
+        // Initialize Alex's position
+        let alexX = 400;
+        let alexY = 300;
+        alex.style.left = alexX + 'px';
+        alex.style.top = alexY + 'px';
+
+        // Tank class
+        class Tank {
+            constructor() {
+                this.element = document.createElement('div');
+                this.element.className = 'tank';
+                this.x = Math.random() * (gameArea.offsetWidth - 40);
+                this.y = Math.random() * (gameArea.offsetHeight - 40);
+                this.speedX = (Math.random() - 0.5) * 3;
+                this.speedY = (Math.random() - 0.5) * 3;
+                this.updatePosition();
+                gameArea.appendChild(this.element);
+            }
+
+            updatePosition() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // Basic boundary check
+                if (this.x < 0 || this.x > gameArea.offsetWidth - 40) this.speedX *= -1;
+                if (this.y < 0 || this.y > gameArea.offsetHeight - 40) this.speedY *= -1;
+
+                this.element.style.left = this.x + 'px';
+                this.element.style.top = this.y + 'px';
+            }
+        }
+
+        // Create some tanks
+        for (let i = 0; i < 5; i++) {
+            tanks.push(new Tank());
+        }
+
+        // Keyboard controls
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Game loop
+        function update() {
+            const now = Date.now();
+            const deltaTime = (now - lastUpdate) / 1000;
+            lastUpdate = now;
+
+            // Move Alex
+            if (keys['w']) alexY -= speed / deltaTime;
+            if (keys['s']) alexY += speed / deltaTime;
+            if (keys['a']) alexX -= speed / deltaTime;
+            if (keys['d']) alexX += speed / deltaTime;
+
+            // Keep Alex in bounds
+            alexX = Math.max(0, Math.min(gameArea.offsetWidth - 50, alexX));
+            alexY = Math.max(0, Math.min(gameArea.offsetHeight - 50, alexY));
+
+            alex.style.left = alexX + 'px';
+            alex.style.top = alexY + 'px';
+
+            // Update tanks
+            tanks.forEach((tank, index) => {
+                tank.updatePosition();
+                
+                // Basic collision detection
+                const collision = (
+                    alexX < tank.x + 40 &&
+                    alexX + 50 > tank.x &&
+                    alexY < tank.y + 40 &&
+                    alexY + 50 > tank.y
+                );
+
+                if (collision) {
+                    //increase score
+                    score++;
+                    document.getElementById('scoreValue').innerText = score;
+
+                    // Remove tank
+                    tank.element.remove();
+                    tanks.splice(index, 1);
+
+                     // Add more tanks if there are less than 2
+                    if(tanks.length < 2){
+                        for (let i = 0; i < 5; i++) {
+                            tanks.push(new Tank());
+                        }
+                    }
+                }
+            });
+
+            requestAnimationFrame(update);
+        }
+
+    const explosion = document.getElementById('explosion');
+    const shopButtonPower = document.getElementById('shopButtonPower');
+    const shopButtonSpeed = document.getElementById('shopButtonSpeed');
+
+    shopButtonPower.addEventListener('click', () => {
+        triggerExplosion();
+    });
+
+    shopButtonSpeed.addEventListener('click', () => {
+        speed += 0.3; // Increase speed by 0.3
+    });
+
+    function triggerExplosion() {
+        // Position explosion at Alex's center
+        explosion.style.left = alexX + 'px';
+        explosion.style.top = alexY + 'px';
+        explosion.style.display = 'block';
+
+        setTimeout(() => {
+            explosion.style.display = 'none'; // Hide after explosion
+        }, 500); // Explosion lasts 0.5 seconds
+
+        // Remove all tanks in range
+        tanks.forEach((tank, index) => {
+            const dx = alexX - tank.x;
+            const dy = alexY - tank.y;
+            const distance = Math.sqrt(dx * dx + dy * dy); // Calculate distance
+
+            if (distance < 150) { // If within explosion radius
+                tank.element.remove(); // Remove tank element
+                tanks.splice(index, 1);
+                score++; // Increase score
+                document.getElementById('scoreValue').innerText = score;
+            }
+        });
+    }
+
+        // Start game
+        update();
+    </script>
+</body>
+</html>
